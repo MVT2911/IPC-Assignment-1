@@ -79,3 +79,63 @@ int main(int argc, char *argv[]) {
         end_time = omp_get_wtime();
         printf("%d, Mode %d\nThreads: %d\n", N, mode, omp_get_max_threads());
     }
+     else if (mode == 3) {
+        long long checksum_atomic = 0;
+        double start_atomic = omp_get_wtime();
+        #pragma omp parallel for reduction(+:sumC) reduction(max:maxC) private(j, k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
+                }
+                C[i * N + j] = acc;
+                sumC += acc;
+                if (acc > maxC) maxC = acc;
+                long long val = (long long)(acc * 1000.0) % 100000;
+                #pragma omp atomic
+                checksum_atomic += val;
+            }
+        }
+        double end_atomic = omp_get_wtime();
+
+        long long checksum_critical = 0;
+        double start_critical = omp_get_wtime();
+        #pragma omp parallel for private(j, k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                long long val = (long long)(C[i * N + j] * 1000.0) % 100000;
+                #pragma omp critical
+                {
+                    checksum_critical += val;
+                }
+            }
+        }
+        double end_critical = omp_get_wtime();
+        printf("%d, Mode 3\nThreads: %d\nAtomic Time: %f s, Checksum: %lld\nCritical Time: %f s, Checksum: %lld\n", 
+               N, omp_get_max_threads(), end_atomic - start_atomic, checksum_atomic, end_critical - start_critical, checksum_critical);
+        free(A); free(B); free(C);
+        return 0;
+    }
+    else if (mode == 4) {
+        start_time = omp_get_wtime();
+        #pragma omp parallel
+        {
+            #pragma omp single
+            {
+                for (i = 0; i < N; i += 16) {
+                    #pragma omp task firstprivate(i) shared(A, B, C, N) private(j, k)
+                    {
+                        int i_end = (i + 16 > N) ? N : i + 16;
+                        for (int bi = i; bi < i_end; bi++) {
+                            for (int bj = 0; bj < N; bj++) {
+                                double acc = 0.0;
+                                for (int bk = 0; bk < N; bk++) {
+                                    acc += A[bi * N + bk] * B[bk * N + bj];
+                                }
+                                C[bi * N + bj] = acc;
+                            }
+                        }
+                    }
+                }
+            }
