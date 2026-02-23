@@ -139,3 +139,38 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+     for(int idx=0; idx<N*N; idx++) {
+            sumC += C[idx];
+            if(C[idx] > maxC) maxC = C[idx];
+            checksum += (long long)(C[idx] * 1000.0) % 100000;
+        }
+        end_time = omp_get_wtime();
+        printf("%d, Mode 4\nThreads: %d\n", N, omp_get_max_threads());
+    }
+    else if (mode == 5 || mode == 6) {
+        if (mode == 5) omp_set_num_threads(1);
+        start_time = omp_get_wtime();
+        #pragma omp parallel for reduction(+:sumC) reduction(max:maxC) private(j, k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                #pragma omp simd reduction(+:acc)
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
+                }
+                C[i * N + j] = acc;
+                sumC += acc;
+                if (acc > maxC) maxC = acc;
+                #pragma omp atomic
+                checksum += (long long)(acc * 1000.0) % 100000;
+            }
+        }
+        end_time = omp_get_wtime();
+        printf("%d, Mode %d\nThreads: %d\n", N, mode, (mode == 5 ? 1 : omp_get_max_threads()));
+    }
+
+    printf("Kernel Time: %f s\nSum: %f, Max: %f, Checksum: %lld\n", end_time - start_time, sumC, maxC, checksum);
+
+    free(A); free(B); free(C);
+    return 0;
+}
