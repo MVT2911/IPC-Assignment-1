@@ -139,6 +139,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+        }
      for(int idx=0; idx<N*N; idx++) {
             sumC += C[idx];
             if(C[idx] > maxC) maxC = C[idx];
