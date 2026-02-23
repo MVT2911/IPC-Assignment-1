@@ -30,3 +30,52 @@ int main(int argc, char *argv[]) {
     double sumC = 0.0, maxC = -1.0, start_time, end_time;
     long long checksum = 0;
     int i, j, k;
+      if (mode == 0) {
+        start_time = omp_get_wtime();
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
+                }
+                C[i * N + j] = acc;
+                sumC += acc;
+                if (acc > maxC) maxC = acc;
+                checksum += (long long)(acc * 1000.0) % 100000;
+            }
+        }
+        end_time = omp_get_wtime();
+        printf("%d, Mode 0 (Serial)\nThreads: 1\n", N);
+    } 
+    else if (mode == 1 || mode == 2) {
+        start_time = omp_get_wtime();
+        if (mode == 1) {
+            #pragma omp parallel for reduction(+:sumC) reduction(max:maxC) private(j, k)
+            for (i = 0; i < N; i++) {
+                for (j = 0; j < N; j++) {
+                    double acc = 0.0;
+                    for (k = 0; k < N; k++) {
+                        acc += A[i * N + k] * B[k * N + j];
+                    }
+                    C[i * N + j] = acc;
+                    sumC += acc;
+                    if (acc > maxC) maxC = acc;
+                }
+            }
+        } else {
+            #pragma omp parallel for collapse(2) reduction(+:sumC) reduction(max:maxC) private(k)
+            for (i = 0; i < N; i++) {
+                for (j = 0; j < N; j++) {
+                    double acc = 0.0;
+                    for (k = 0; k < N; k++) {
+                        acc += A[i * N + k] * B[k * N + j];
+                    }
+                    C[i * N + j] = acc;
+                    sumC += acc;
+                    if (acc > maxC) maxC = acc;
+                }
+            }
+        }
+        end_time = omp_get_wtime();
+        printf("%d, Mode %d\nThreads: %d\n", N, mode, omp_get_max_threads());
+    }
