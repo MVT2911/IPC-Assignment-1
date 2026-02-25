@@ -60,7 +60,9 @@ int main(int argc, char *argv[]) {
                     C[i * N + j] = acc;
                     sumC += acc;
                     if (acc > maxC) maxC = acc;
-                    checksum += (long long)(acc * 1000.0) % 100000;
+                    long long val = (long long)(acc * 1000.0) % 100000;
+                    #pragma omp atomic
+                    checksum_atomic += val;
                 }
             }
         } else {
@@ -74,7 +76,9 @@ int main(int argc, char *argv[]) {
                     C[i * N + j] = acc;
                     sumC += acc;
                     if (acc > maxC) maxC = acc;
-                    checksum += (long long)(acc * 1000.0) % 100000;
+                    long long val = (long long)(acc * 1000.0) % 100000;
+                    #pragma omp atomic
+                    checksum_atomic += val;
                 }
             }
         }
