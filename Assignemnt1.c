@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
                     if (acc > maxC) maxC = acc;
                     long long val = (long long)(acc * 1000.0) % 100000;
                     #pragma omp atomic
-                    checksum_atomic += val;
+                    checksum += val;
                 }
             }
         } else {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
                     if (acc > maxC) maxC = acc;
                     long long val = (long long)(acc * 1000.0) % 100000;
                     #pragma omp atomic
-                    checksum_atomic += val;
+                    checksum += val;
                 }
             }
         }
