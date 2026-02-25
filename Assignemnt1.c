@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
         end_time = omp_get_wtime();
         printf("%d, Mode %d\nThreads: %d\n", N, mode, omp_get_max_threads());
     }
-     else if (mode == 3) {
+    else if (mode == 3) {
         long long checksum_atomic = 0;
         double start_atomic = omp_get_wtime();
         #pragma omp parallel for reduction(+:sumC) reduction(max:maxC) private(j, k)
@@ -118,10 +118,15 @@ int main(int argc, char *argv[]) {
             }
         }
         double end_critical = omp_get_wtime();
-        printf("%d, Mode 3\nThreads: %d\nSum: %d, Max: %d\nAtomic Time: %f s, Checksum: %lld\nCritical Time: %f s, Checksum: %lld\n", 
-               N, omp_get_max_threads(), sumC, maxC, end_atomic - start_atomic, checksum_atomic, end_critical - start_critical, checksum_critical);
+        
+        printf("%d, Mode 3 (Synchronization Comparison)\n", N);
+        printf("Threads: %d\n", omp_get_max_threads());
+        printf("Atomic Time:   %f s, Checksum: %lld\n", end_atomic - start_atomic, checksum_atomic);
+        printf("Critical Time: %f s, Checksum: %lld\n", end_critical - start_critical, checksum_critical);
+        printf("Sum: %f, Max: %f\n", sumC, maxC); 
+
         free(A); free(B); free(C);
-        return 0;
+        return 0; 
     }
     else if (mode == 4) {
         start_time = omp_get_wtime();
