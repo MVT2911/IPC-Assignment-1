@@ -118,8 +118,8 @@ int main(int argc, char *argv[]) {
             }
         }
         double end_critical = omp_get_wtime();
-        printf("%d, Mode 3\nThreads: %d\nAtomic Time: %f s, Checksum: %lld\nCritical Time: %f s, Checksum: %lld\n", 
-               N, omp_get_max_threads(), end_atomic - start_atomic, checksum_atomic, end_critical - start_critical, checksum_critical);
+        printf("%d, Mode 3\nThreads: %d\nSum: %d, Max: %d\nAtomic Time: %f s, Checksum: %lld\nCritical Time: %f s, Checksum: %lld\n", 
+               N, omp_get_max_threads(), sumC, maxC, end_atomic - start_atomic, checksum_atomic, end_critical - start_critical, checksum_critical);
         free(A); free(B); free(C);
         return 0;
     }
