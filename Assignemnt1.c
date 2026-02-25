@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
                     C[i * N + j] = acc;
                     sumC += acc;
                     if (acc > maxC) maxC = acc;
+                    checksum += (long long)(acc * 1000.0) % 100000;
                 }
             }
         } else {
@@ -73,6 +74,7 @@ int main(int argc, char *argv[]) {
                     C[i * N + j] = acc;
                     sumC += acc;
                     if (acc > maxC) maxC = acc;
+                    checksum += (long long)(acc * 1000.0) % 100000;
                 }
             }
         }
