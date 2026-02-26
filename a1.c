@@ -47,82 +47,65 @@ int main(int argc, char *argv[]) {
         end_time = omp_get_wtime();
         printf("%d, Mode 0 (Serial)\nThreads: 1\n", N);
     } 
-    else if (mode == 1 || mode == 2) {
-        if (mode == 1) {
-            // --- Part A: STATIC SCHEDULING ---
-            sumC = 0.0; maxC = -1.0; checksum = 0; // Reset metrics
-            double start_static = omp_get_wtime();
-            
-            #pragma omp parallel for schedule(static) reduction(+:sumC) reduction(max:maxC) private(j, k)
-            for (i = 0; i < N; i++) {
-                for (j = 0; j < N; j++) {
-                    double acc = 0.0;
-                    for (k = 0; k < N; k++) {
-                        acc += A[i * N + k] * B[k * N + j];
-                    }
-                    C[i * N + j] = acc;
-                    sumC += acc;
-                    if (acc > maxC) maxC = acc;
-                    long long val = (long long)(acc * 1000.0) % 100000;
-                    #pragma omp atomic
-                    checksum += val;
+    else if (mode == 1) {
+        sumC = 0.0; maxC = -1.0; checksum = 0;
+        double start_static = omp_get_wtime();
+        #pragma omp parallel for schedule(static) reduction(+:sumC) reduction(max:maxC) private(j, k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
                 }
+                C[i * N + j] = acc;
+                sumC += acc;
+                if (acc > maxC) maxC = acc;
+                long long val = (long long)(acc * 1000.0) % 100000;
+                #pragma omp atomic
+                checksum += val;
             }
-            double end_static = omp_get_wtime();
-
-            // --- Part B: DYNAMIC SCHEDULING ---
-            long long checksum_dynamic = 0;
-            double sumC_dynamic = 0.0;
-            double maxC_dynamic = -1.0;
-            double start_dynamic = omp_get_wtime();
-
-            #pragma omp parallel for schedule(dynamic) reduction(+:sumC_dynamic) reduction(max:maxC_dynamic) private(j, k)
-            for (i = 0; i < N; i++) {
-                for (j = 0; j < N; j++) {
-                    double acc = 0.0;
-                    for (k = 0; k < N; k++) {
-                        acc += A[i * N + k] * B[k * N + j];
-                    }
-                    C[i * N + j] = acc;
-                    sumC_dynamic += acc;
-                    if (acc > maxC_dynamic) maxC_dynamic = acc;
-                    long long val = (long long)(acc * 1000.0) % 100000;
-                    #pragma omp atomic
-                    checksum_dynamic += val;
-                }
-            }
-            double end_dynamic = omp_get_wtime();
-
-            printf("%d, Mode 1 (Loop Parallelism - Scheduling Comparison)\n", N);
-            printf("Threads: %d\n", omp_get_max_threads());
-            printf("Static Time:  %f s, Checksum: %lld\n", end_static - start_static, checksum);
-            printf("Dynamic Time: %f s, Checksum: %lld\n", end_dynamic - start_dynamic, checksum_dynamic);
-            printf("Sum: %f, Max: %f\n", sumC, maxC);
-            
-            free(A); free(B); free(C);
-            return 0; // Exit early since we handled the output
-
-        } else {
-            // Mode 2: Collapse(2) - Standard Implementation
-            start_time = omp_get_wtime();
-            #pragma omp parallel for collapse(2) reduction(+:sumC) reduction(max:maxC) private(k)
-            for (i = 0; i < N; i++) {
-                for (j = 0; j < N; j++) {
-                    double acc = 0.0;
-                    for (k = 0; k < N; k++) {
-                        acc += A[i * N + k] * B[k * N + j];
-                    }
-                    C[i * N + j] = acc;
-                    sumC += acc;
-                    if (acc > maxC) maxC = acc;
-                    long long val = (long long)(acc * 1000.0) % 100000;
-                    #pragma omp atomic
-                    checksum += val;
-                }
-            }
-            end_time = omp_get_wtime();
-            printf("%d, Mode 2 (Collapse Parallelism)\nThreads: %d\n", N, omp_get_max_threads());
         }
+        double end_static = omp_get_wtime();
+
+        long long checksum_dyn = 0;
+        double sum_dyn = 0, max_dyn = -1, start_dyn = omp_get_wtime();
+        #pragma omp parallel for schedule(dynamic) reduction(+:sum_dyn) reduction(max:max_dyn) private(j, k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
+                }
+                sum_dyn += acc;
+                if (acc > max_dyn) max_dyn = acc;
+                long long val = (long long)(acc * 1000.0) % 100000;
+                #pragma omp atomic
+                checksum_dyn += val;
+            }
+        }
+        double end_dyn = omp_get_wtime();
+        printf("%d, Mode 1\nThreads: %d\n", N, omp_get_max_threads());
+        printf("Static Time: %f s, Checksum: %lld\nDynamic Time: %f s, Checksum: %lld\n", end_static-start_static, checksum, end_dyn-start_dyn, checksum_dyn);
+        printf("Sum: %f, Max: %f\n", sumC, maxC);
+        free(A); free(B); free(C); return 0;
+    }
+    else if (mode == 2) {
+        start_time = omp_get_wtime();
+        #pragma omp parallel for collapse(2) reduction(+:sumC) reduction(max:maxC) private(k)
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                double acc = 0.0;
+                for (k = 0; k < N; k++) { acc += A[i * N + k] * B[k * N + j]; }
+                C[i * N + j] = acc;
+                sumC += acc;
+                if (acc > maxC) maxC = acc;
+                long long val = (long long)(acc * 1000.0) % 100000;
+                #pragma omp atomic
+                checksum += val;
+            }
+        }
+        end_time = omp_get_wtime();
+        printf("%d, Mode 2\nThreads: %d\n", N, omp_get_max_threads());
     }
     else if (mode == 3) {
         long long checksum_atomic = 0;
