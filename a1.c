@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     double sumC = 0.0, maxC = -1.0, start_time, end_time;
     long long checksum = 0;
     int i, j, k;
-      if (mode == 0) {
+    if (mode == 0) {
         start_time = omp_get_wtime();
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
         long long checksum_critical = 0;
         double start_critical = omp_get_wtime();
-        #pragma omp parallel for private(j, k)
+        #pragma omp parallel for private(j)
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
                 long long val = (long long)(C[i * N + j] * 1000.0) % 100000;
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
             #pragma omp single
             {
                 for (i = 0; i < N; i += 16) {
-                    #pragma omp task firstprivate(i) shared(A, B, C, N) private(j, k)
+                    #pragma omp task firstprivate(i) shared(A, B, C, N)
                     {
                         int i_end = (i + 16 > N) ? N : i + 16;
                         for (int bi = i; bi < i_end; bi++) {
