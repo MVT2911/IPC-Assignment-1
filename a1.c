@@ -108,8 +108,14 @@ int main(int argc, char *argv[]) {
         printf("%d, Mode 2\nThreads: %d\n", N, omp_get_max_threads());
     }
     else if (mode == 3) {
+        // Reset metrics to ensure Mode 3 starts fresh
+        sumC = 0.0; 
+        maxC = -1.0;
+        
+        // --- Pass 1: Atomic Synchronization ---
         long long checksum_atomic = 0;
         double start_atomic = omp_get_wtime();
+        
         #pragma omp parallel for reduction(+:sumC) reduction(max:maxC) private(j, k)
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
@@ -120,6 +126,7 @@ int main(int argc, char *argv[]) {
                 C[i * N + j] = acc;
                 sumC += acc;
                 if (acc > maxC) maxC = acc;
+
                 long long val = (long long)(acc * 1000.0) % 100000;
                 #pragma omp atomic
                 checksum_atomic += val;
@@ -127,12 +134,19 @@ int main(int argc, char *argv[]) {
         }
         double end_atomic = omp_get_wtime();
 
+        // --- Pass 2: Critical Section Synchronization ---
         long long checksum_critical = 0;
         double start_critical = omp_get_wtime();
-        #pragma omp parallel for private(j)
+        
+        #pragma omp parallel for private(j, k)
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
-                long long val = (long long)(C[i * N + j] * 1000.0) % 100000;
+                double acc = 0.0;
+                for (k = 0; k < N; k++) {
+                    acc += A[i * N + k] * B[k * N + j];
+                }
+                
+                long long val = (long long)(acc * 1000.0) % 100000;
                 #pragma omp critical
                 {
                     checksum_critical += val;
@@ -140,7 +154,7 @@ int main(int argc, char *argv[]) {
             }
         }
         double end_critical = omp_get_wtime();
-        
+
         printf("%d, Mode 3 (Synchronization Comparison)\n", N);
         printf("Threads: %d\n", omp_get_max_threads());
         printf("Atomic Time:   %f s, Checksum: %lld\n", end_atomic - start_atomic, checksum_atomic);
