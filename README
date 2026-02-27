@@ -1,0 +1,16 @@
+1. Compile Command
+    gcc -O3 -fopenmp a1.c -lm -o a1
+
+2. Execute Command
+    OMP_NUM-THREADS=4 ./a1 512 3
+
+    Here OMP_NUM-THREADS this is used to specify the number Threads to be used.
+    ./a1 executes the c code file
+    512 is N, size of matrix
+    3 is the mode to be selected
+
+3. Machine Specification : System used to test the code and acquire results
+    UNB Remote Labs
+
+4. N values used:
+    512, 1024, 2048
